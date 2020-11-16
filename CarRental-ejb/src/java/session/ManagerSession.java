@@ -17,7 +17,6 @@ import javax.persistence.PersistenceContext;
 import rental.Car;
 import rental.CarRentalCompany;
 import rental.CarType;
-import rental.RentalStore;
 import rental.Reservation;
 
 @Stateless
@@ -106,6 +105,27 @@ public class ManagerSession implements ManagerSessionRemote {
 //        return out.size();
     }
 
+    
+    public Set<String> getBestClients() {
+        // TODO not sure
+        
+        long maxRent = (Long)em.createQuery(
+                "select max(num_rent) from " + 
+                " (select count(*) as num_rent from Reservation r" + 
+                " group by r.carRenter)")
+                .getResultList().get(0);
+        
+        List<String> renters = em.createQuery(
+                "select renter from" +
+                " (select r.carRenter as renter, count(r.id) as num_rent from Reservation r" + 
+                " group by r.carRenter" + 
+                " order by count(r.id) desc)" + 
+                " where num_rent = :maxRent").setParameter("maxRent", maxRent)
+                .getResultList();
+        
+        return new HashSet<String>(renters); 
+    }
+    
 //    public void addCarRentalCompany(String name, List<CarType> carTypes, List<String> regions) {
 //        List<Car> carsList = new LinkedList<Car>();
 //        
@@ -209,6 +229,7 @@ public class ManagerSession implements ManagerSessionRemote {
     
     
     public void testJPQL(){
+        List<List> li = em.createQuery("select car.id, car.type.name from Car car").getResultList();
 //        List li = 
 //                em.createQuery(
 //                "select car.reservations from CarRentalCompany company," + 
@@ -226,9 +247,9 @@ public class ManagerSession implements ManagerSessionRemote {
 //        
 //        System.out.println("size: " + li.size());
         
-//        for(Object ob : li){
-//            System.out.println(ob);
-//        }
+        for(List ob : li){
+            System.out.println(ob.get(0)+" "+ob.get(1));
+        }
     }
     
 }

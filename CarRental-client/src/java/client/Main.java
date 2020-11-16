@@ -31,8 +31,8 @@ public class Main extends AbstractTestManagement<ReservationSessionRemote, Manag
         initManagerSession.loadRental("hertz.csv");
         initManagerSession.loadRental("dockx.csv");
         
-//        initManagerSession.testJPQL();
-        testReservationSession.testJPQL();
+        initManagerSession.testJPQL();
+//        testReservationSession.testJPQL();
 //        client.run();
     }
 
