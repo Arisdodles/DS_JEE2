@@ -119,17 +119,10 @@ public class ManagerSession implements ManagerSessionRemote {
         List<Reservation> reservations = em.createQuery(
                 "select r from Car car," + 
                 " in (car.reservations) r" + 
-                " where r.carRenter = :renter").setParameter("renter", renter)
+                " where r.carRenter = :renter")
+                .setParameter("renter", renter)
                 .getResultList();
-//        int numOfRent = 0;
-//        for(List<Reservation> rl : reservations){
-//            for(Reservation r : rl){
-//                if(r.getCarRenter().equals(renter)){
-//                    numOfRent++;
-//                }
-//            }
-//        }
-        
+
         return reservations.size();
     }
     
@@ -141,15 +134,11 @@ public class ManagerSession implements ManagerSessionRemote {
                 .setParameter("company", carRentalCompanyName)
                 .getResultList();
         
-        Date firstDayInTheYear = new Date(year, 1, 1);
-        Date lastDayInTheYear = new Date(year, 12, 31);
-        
         Map<CarType, Integer> numOfReservations = new HashMap<>();
         
         for(Car car : cars){
             for(Reservation res : car.getReservations()){
-                if(res.getStartDate().after(firstDayInTheYear) && 
-                        res.getStartDate().before(lastDayInTheYear)){
+                if(res.getStartDate().getYear() == year - 1900){
                     if(numOfReservations.containsKey(car.getType())){
                         numOfReservations.put(car.getType(), 
                                 numOfReservations.get(car.getType()) + 1);
@@ -210,31 +199,6 @@ public class ManagerSession implements ManagerSessionRemote {
         return out; 
     }
     
-//    public void addCarRentalCompany(String name, List<CarType> carTypes, List<String> regions) {
-//        List<Car> carsList = new LinkedList<Car>();
-//        
-//        for (CarType carType : carTypes) {
-//            carsList.add(new Car(carType));
-//        }
-//
-//        CarRentalCompany company = new CarRentalCompany(name, regions, carsList);
-//        List<Car> carsToCopy = company.popAllCars();
-//        manager.persist(company);
-//        CarRentalCompany companyEntry = manager.find(CarRentalCompany.class, company.getName());
-//        
-//        for (Car car : carsToCopy) {
-//            CarType type = manager.find(CarType.class, car.getType().toString());
-//            if (type != null) {
-//                companyEntry.addCarType(type);
-//                car.setType(type);
-//            }
-//            else {
-//                companyEntry.addCarType(car.getType());
-//                car.setType(car.getType());
-//            }
-//            companyEntry.addCar(car);
-//        }
-//    }
     
     @Override
     public void loadRental(String datafile) {

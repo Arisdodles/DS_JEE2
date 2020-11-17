@@ -55,6 +55,7 @@ public class Main extends AbstractTestManagement<ReservationSessionRemote, Manag
     protected ReservationSessionRemote getNewReservationSession(String name) throws Exception {
         InitialContext context = new InitialContext();
         ReservationSessionRemote session = (ReservationSessionRemote) context.lookup(ReservationSessionRemote.class.getName());
+        session.setRenterName(name);
         sessions.put(name, session);
         return session;
     }
@@ -63,6 +64,7 @@ public class Main extends AbstractTestManagement<ReservationSessionRemote, Manag
     protected ManagerSessionRemote getNewManagerSession(String name) throws Exception {
         InitialContext context = new InitialContext();
         ManagerSessionRemote session = (ManagerSessionRemote) context.lookup(ManagerSessionRemote.class.getName());
+        
         managerSessions.put(name, session);
         return session;
     }

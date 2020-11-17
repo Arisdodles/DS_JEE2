@@ -81,10 +81,14 @@ public class ReservationSession implements ReservationSessionRemote {
         double minPrice = allCarTypes.get(0).getRentalPricePerDay();
         String out = allCarTypes.get(0).getName();
         for(CarType ct : allCarTypes){
+            System.out.println("price: "+ minPrice);
+            System.out.println("type: "+ out);
             double price = ct.getRentalPricePerDay();
             if(price < minPrice){
                 minPrice = price;
+                
                 out = ct.getName();
+                
             }
         }
         return out;
