@@ -67,22 +67,53 @@ public class ReservationSession implements ReservationSessionRemote {
 //        }
         return new LinkedList<CarType>(tmp);
     }
+    
+    @Override
+    public String getCheapestCarType(Date start, Date end, String region) {
+        List<CarRentalCompany> companies = em.createQuery(
+                "select c from CarRentalCompany c").getResultList();
+        List<CarType> allCarTypes = new LinkedList<>();
+        for( CarRentalCompany company : companies){
+            if(company.getRegions().contains(region)){
+                allCarTypes.addAll(company.getAvailableCarTypes(start, end));
+            }
+        }
+        double minPrice = allCarTypes.get(0).getRentalPricePerDay();
+        String out = allCarTypes.get(0).getName();
+        for(CarType ct : allCarTypes){
+            double price = ct.getRentalPricePerDay();
+            if(price < minPrice){
+                minPrice = price;
+                out = ct.getName();
+            }
+        }
+        return out;
+    }
 
     @Override
-    public Quote createQuote(String company, ReservationConstraints constraints) throws ReservationException {
-        CarRentalCompany crc = (CarRentalCompany)em.createQuery(
-                "select c from CarRentalCompany c" + 
-                " where c.name = :company")
-                .setParameter("company", company)
-                .getResultList().get(0);
+    public Quote createQuote(ReservationConstraints constraints) throws ReservationException {
+        List<CarRentalCompany> crcs = em.createQuery(
+                "select c from CarRentalCompany c")
+                .getResultList();
         
-        try {
-            Quote out = crc.createQuote(constraints, renter);
-            quotes.add(out);
-            return out;
-        } catch(Exception e) {
-            throw new ReservationException(e);
+        int numOfExceptions = 0;
+        Quote out = null;
+        for(CarRentalCompany crc : crcs){
+            try {
+                out = crc.createQuote(constraints, renter);
+                quotes.add(out);
+            } catch(Exception e) {
+                numOfExceptions++;
+                continue;
+            }
         }
+        
+        if(numOfExceptions == crcs.size()){
+            throw new ReservationException("No company is avaliable for this reservation");
+        }
+        
+        return out;
+        
         
 //        try {
 //            Quote out = RentalStore.getRental(company).createQuote(constraints, renter);

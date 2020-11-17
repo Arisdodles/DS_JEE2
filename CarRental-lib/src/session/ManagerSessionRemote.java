@@ -14,13 +14,17 @@ public interface ManagerSessionRemote {
     
     public int getNumberOfReservations(String company, String type, int carId);
     
-    public int getNumberOfReservations(String company, String type);
+    public int getNumberOfReservationsByCarType(String company, String type);
 
     public void loadRental(String datafile);
 
     public void testJPQL();
 
     Set<String> getBestClients();
+
+    CarType getMostPopularCarTypeIn(String carRentalCompanyName, int year);
+
+    int getNumberOfReservationsBy(String renter);
     
     
 }

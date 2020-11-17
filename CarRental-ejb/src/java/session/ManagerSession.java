@@ -4,9 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -75,21 +79,26 @@ public class ManagerSession implements ManagerSessionRemote {
     }
 
     @Override
-    public int getNumberOfReservations(String company, String type) {
+    public int getNumberOfReservationsByCarType(String company, String type) {
         // TODO not sure
         int sum = 0;
-        List<List<Reservation>> reservations = em.createQuery(
-                "select car.reservations from CarRentalCompany company," + 
+        List<Car> cars = em.createQuery(
+                "select car from CarRentalCompany company," + 
                 " in (company.cars) car" + 
                 " where company.name = :company and car.type.name = :type")
                 .setParameter("company", company).setParameter("type", type)
                 .getResultList();
         
-        for(List<Reservation> rs : reservations){
-            if(rs != null){
-                sum += rs.size();
-            }
+//        List<List<Reservation>> reservationLists = new LinkedList<>();
+        for(Car car : cars){
+            sum += car.getReservations().size();
         }
+        
+//        for(List<Reservation> rs : reservations){
+//            if(rs != null){
+//                sum += rs.size();
+//            }
+//        }
         
         return sum;
         
@@ -105,25 +114,100 @@ public class ManagerSession implements ManagerSessionRemote {
 //        return out.size();
     }
 
+    @Override
+    public int getNumberOfReservationsBy(String renter){
+        List<Reservation> reservations = em.createQuery(
+                "select r from Car car," + 
+                " in (car.reservations) r" + 
+                " where r.carRenter = :renter").setParameter("renter", renter)
+                .getResultList();
+//        int numOfRent = 0;
+//        for(List<Reservation> rl : reservations){
+//            for(Reservation r : rl){
+//                if(r.getCarRenter().equals(renter)){
+//                    numOfRent++;
+//                }
+//            }
+//        }
+        
+        return reservations.size();
+    }
     
+    @Override
+    public CarType getMostPopularCarTypeIn(String carRentalCompanyName, int year) {
+        List<Car> cars = em.createQuery(
+                "select company.cars from CarRentalCompany company" + 
+                " where company.name = :company")
+                .setParameter("company", carRentalCompanyName)
+                .getResultList();
+        
+        Date firstDayInTheYear = new Date(year, 1, 1);
+        Date lastDayInTheYear = new Date(year, 12, 31);
+        
+        Map<CarType, Integer> numOfReservations = new HashMap<>();
+        
+        for(Car car : cars){
+            for(Reservation res : car.getReservations()){
+                if(res.getStartDate().after(firstDayInTheYear) && 
+                        res.getStartDate().before(lastDayInTheYear)){
+                    if(numOfReservations.containsKey(car.getType())){
+                        numOfReservations.put(car.getType(), 
+                                numOfReservations.get(car.getType()) + 1);
+                    } else {
+                        numOfReservations.put(car.getType(), 1);
+                    }
+                }
+                
+            }
+        }
+        
+        int maxReservation = 0;
+        CarType out = null;
+        for(Entry<CarType, Integer> e : numOfReservations.entrySet()){
+            if(e.getValue() > maxReservation){
+                maxReservation = e.getValue();
+                out = e.getKey();
+            }
+        }
+        return out;
+    }
+    
+    @Override
     public Set<String> getBestClients() {
         // TODO not sure
         
-        long maxRent = (Long)em.createQuery(
-                "select max(num_rent) from " + 
-                " (select count(*) as num_rent from Reservation r" + 
-                " group by r.carRenter)")
-                .getResultList().get(0);
-        
-        List<String> renters = em.createQuery(
-                "select renter from" +
-                " (select r.carRenter as renter, count(r.id) as num_rent from Reservation r" + 
-                " group by r.carRenter" + 
-                " order by count(r.id) desc)" + 
-                " where num_rent = :maxRent").setParameter("maxRent", maxRent)
+        List<Reservation> reservations = em.createQuery(
+                "select r from Car car," + 
+                " in (car.reservations) r")
                 .getResultList();
         
-        return new HashSet<String>(renters); 
+        Map<String, Integer> numOfRent = new HashMap<>();
+        
+//        for(List<Reservation> rl : reservations){
+            for(Reservation r : reservations){
+                if(numOfRent.containsKey(r.getCarRenter())){
+                    numOfRent.put(r.getCarRenter(), numOfRent.get(r.getCarRenter())+1);
+                } else {
+                    numOfRent.put(r.getCarRenter(), 1);
+                }
+            }
+//        }
+        
+        int maxRent = 0;
+        for(int n : numOfRent.values()){
+            if(n > maxRent){
+                maxRent = n;
+            }
+        }
+        
+        Set<String> out = new HashSet<>();
+        for(Entry<String, Integer> e : numOfRent.entrySet()){
+            if(e.getValue() == maxRent){
+                out.add(e.getKey());
+            }
+        }
+        
+        return out; 
     }
     
 //    public void addCarRentalCompany(String name, List<CarType> carTypes, List<String> regions) {
@@ -229,7 +313,7 @@ public class ManagerSession implements ManagerSessionRemote {
     
     
     public void testJPQL(){
-        List<List> li = em.createQuery("select car.id, car.type.name from Car car").getResultList();
+        List<Car> li = em.createQuery("select company.cars from CarRentalCompany company").getResultList();
 //        List li = 
 //                em.createQuery(
 //                "select car.reservations from CarRentalCompany company," + 
@@ -247,8 +331,8 @@ public class ManagerSession implements ManagerSessionRemote {
 //        
 //        System.out.println("size: " + li.size());
         
-        for(List ob : li){
-            System.out.println(ob.get(0)+" "+ob.get(1));
+        for(Car ob : li){
+            System.out.println(ob.getId());
         }
     }
     
