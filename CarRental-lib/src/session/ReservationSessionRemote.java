@@ -27,8 +27,6 @@ public interface ReservationSessionRemote {
     
     public List<Reservation> confirmQuotes() throws ReservationException;
 
-    void testJPQL();
-
     String getCheapestCarType(Date start, Date end, String region);
     
 }

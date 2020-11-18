@@ -1,5 +1,6 @@
 package rental;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -9,13 +10,13 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.CascadeType;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 
 @Entity
-public class CarRentalCompany {
+public class CarRentalCompany implements Serializable {
 
     private static Logger logger = Logger.getLogger(CarRentalCompany.class.getName());
     @Id private String name;
@@ -23,9 +24,10 @@ public class CarRentalCompany {
     @OneToMany(cascade=CascadeType.ALL)
     private List<Car> cars;
     
-    @ManyToMany(cascade=CascadeType.ALL)
+    @OneToMany(cascade=CascadeType.ALL)
     private Set<CarType> carTypes = new HashSet<CarType>();
     
+    @ElementCollection
     private List<String> regions;
 
 	
@@ -53,14 +55,14 @@ public class CarRentalCompany {
         return name;
     }
 
-    private void setName(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
     /***********
      * Regions *
      **********/
-    private void setRegions(List<String> regions) {
+    public void setRegions(List<String> regions) {
         this.regions = regions;
     }
     

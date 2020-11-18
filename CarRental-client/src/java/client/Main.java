@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.naming.InitialContext;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import rental.CarType;
 import rental.Reservation;
 import rental.ReservationConstraints;
@@ -22,17 +20,14 @@ public class Main extends AbstractTestManagement<ReservationSessionRemote, Manag
     }
     
     public static void main(String[] args) throws Exception {
-        // TODO: use updated manager interface to load cars into companies
         
         Main client = new Main("trips");
         
         ManagerSessionRemote initManagerSession = client.getNewManagerSession("init");
-        ReservationSessionRemote testReservationSession = client.getNewReservationSession("init");
+
         initManagerSession.loadRental("hertz.csv");
         initManagerSession.loadRental("dockx.csv");
-        
-//        initManagerSession.testJPQL();
-//        testReservationSession.testJPQL();
+
         client.run();
     }
 

@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,6 +15,8 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import rental.Car;
@@ -25,9 +26,18 @@ import rental.Reservation;
 
 @Stateless
 public class ManagerSession implements ManagerSessionRemote {
+    private String name;
     
     @PersistenceContext
     EntityManager em;
+    
+    public void setName(String name){
+        this.name = name;
+    }
+    
+    public String getName() {
+        return name;
+    }
     
     @Override
     public Set<CarType> getCarTypes(String company) {
@@ -48,15 +58,6 @@ public class ManagerSession implements ManagerSessionRemote {
         out.addAll(carIds);
         return out;
         
-//        try {
-//            for(Car c: RentalStore.getRental(company).getCars(type)){
-//                out.add(c.getId());
-//            }
-//        } catch (IllegalArgumentException ex) {
-//            Logger.getLogger(ManagerSession.class.getName()).log(Level.SEVERE, null, ex);
-//            return null;
-//        }
-//        return out;
     }
 
     @Override
@@ -70,17 +71,11 @@ public class ManagerSession implements ManagerSessionRemote {
                 .getResultList().size();
         
         return out;
-//        try {
-//            return RentalStore.getRental(company).getCar(id).getReservations().size();
-//        } catch (IllegalArgumentException ex) {
-//            Logger.getLogger(ManagerSession.class.getName()).log(Level.SEVERE, null, ex);
-//            return 0;
-//        }
+
     }
 
     @Override
     public int getNumberOfReservationsByCarType(String company, String type) {
-        // TODO not sure
         int sum = 0;
         List<Car> cars = em.createQuery(
                 "select car from CarRentalCompany company," + 
@@ -89,29 +84,12 @@ public class ManagerSession implements ManagerSessionRemote {
                 .setParameter("company", company).setParameter("type", type)
                 .getResultList();
         
-//        List<List<Reservation>> reservationLists = new LinkedList<>();
         for(Car car : cars){
             sum += car.getReservations().size();
         }
         
-//        for(List<Reservation> rs : reservations){
-//            if(rs != null){
-//                sum += rs.size();
-//            }
-//        }
-        
         return sum;
         
-//        Set<Reservation> out = new HashSet<Reservation>();
-//        try {
-//            for(Car c: RentalStore.getRental(company).getCars(type)){
-//                out.addAll(c.getReservations());
-//            }
-//        } catch (IllegalArgumentException ex) {
-//            Logger.getLogger(ManagerSession.class.getName()).log(Level.SEVERE, null, ex);
-//            return 0;
-//        }
-//        return out.size();
     }
 
     @Override
@@ -126,6 +104,9 @@ public class ManagerSession implements ManagerSessionRemote {
         return reservations.size();
     }
     
+    
+    
+    // TODO : Improve the following two methods to use more JPQL
     @Override
     public CarType getMostPopularCarTypeIn(String carRentalCompanyName, int year) {
         List<Car> cars = em.createQuery(
@@ -163,7 +144,6 @@ public class ManagerSession implements ManagerSessionRemote {
     
     @Override
     public Set<String> getBestClients() {
-        // TODO not sure
         
         List<Reservation> reservations = em.createQuery(
                 "select r from Car car," + 
@@ -171,16 +151,14 @@ public class ManagerSession implements ManagerSessionRemote {
                 .getResultList();
         
         Map<String, Integer> numOfRent = new HashMap<>();
-        
-//        for(List<Reservation> rl : reservations){
-            for(Reservation r : reservations){
-                if(numOfRent.containsKey(r.getCarRenter())){
-                    numOfRent.put(r.getCarRenter(), numOfRent.get(r.getCarRenter())+1);
-                } else {
-                    numOfRent.put(r.getCarRenter(), 1);
-                }
+
+        for(Reservation r : reservations){
+            if(numOfRent.containsKey(r.getCarRenter())){
+                numOfRent.put(r.getCarRenter(), numOfRent.get(r.getCarRenter())+1);
+            } else {
+                numOfRent.put(r.getCarRenter(), 1);
             }
-//        }
+        }
         
         int maxRent = 0;
         for(int n : numOfRent.values()){
@@ -199,13 +177,12 @@ public class ManagerSession implements ManagerSessionRemote {
         return out; 
     }
     
-    
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void loadRental(String datafile) {
         try {
             CrcData data = loadData(datafile);
             CarRentalCompany company = new CarRentalCompany(data.name, data.regions, data.cars);
-//            rentals.put(data.name, company);
             em.persist(company);
             Logger.getLogger(ManagerSession.class.getName()).log(Level.INFO, "Loaded {0} from file {1}", new Object[]{data.name, datafile});
         } catch (NumberFormatException ex) {
@@ -221,7 +198,6 @@ public class ManagerSession implements ManagerSessionRemote {
 
         CrcData out = new CrcData();
         StringTokenizer csvReader;
-//        int nextuid = 0;
        
         //open file from jar
         BufferedReader in = new BufferedReader(new InputStreamReader(ManagerSession.class.getClassLoader().getResourceAsStream(datafile)));
@@ -245,7 +221,7 @@ public class ManagerSession implements ManagerSessionRemote {
                             Double.parseDouble(csvReader.nextToken()),
                             Boolean.parseBoolean(csvReader.nextToken()));
                     
-                    CarType persistedCarType = em.find(CarType.class, type.getName());
+                    CarType persistedCarType = em.find(CarType.class, type.getId());
                     
                     if(persistedCarType != null){
                         type = persistedCarType;
@@ -258,7 +234,6 @@ public class ManagerSession implements ManagerSessionRemote {
                         Car car = new Car(type);
                         out.cars.add(car);
                         em.persist(car);
-//                        out.cars.add(new Car(nextuid++, type));
                     }        
                 }
             } 
@@ -273,31 +248,6 @@ public class ManagerSession implements ManagerSessionRemote {
             public List<Car> cars = new LinkedList<Car>();
             public String name;
             public List<String> regions =  new LinkedList<String>();
-    }
-    
-    
-    public void testJPQL(){
-        List<Car> li = em.createQuery("select company.cars from CarRentalCompany company").getResultList();
-//        List li = 
-//                em.createQuery(
-//                "select car.reservations from CarRentalCompany company," + 
-//                " in (company.cars) car" + 
-//                " where company.name = :company and car.id = :id")
-//                .setParameter("company", "Hertz").setParameter("id", 1)
-//                .getResultList();
-                
-//                em.createQuery(
-//                "select car.reservations from CarRentalCompany company," + 
-//                " in (company.cars) car" + 
-//                " where company.name = :company and car.type.name = :type")
-//                .setParameter("company", "Hertz").setParameter("type", "Compact")
-//                .getResultList();
-//        
-//        System.out.println("size: " + li.size());
-        
-        for(Car ob : li){
-            System.out.println(ob.getId());
-        }
     }
     
 }

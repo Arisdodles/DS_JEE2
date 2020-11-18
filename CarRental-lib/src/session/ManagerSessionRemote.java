@@ -18,8 +18,6 @@ public interface ManagerSessionRemote {
 
     public void loadRental(String datafile);
 
-    public void testJPQL();
-
     Set<String> getBestClients();
 
     CarType getMostPopularCarTypeIn(String carRentalCompanyName, int year);
